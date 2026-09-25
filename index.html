@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Study & Note App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8eefd 50%, #f5f3ff 100%);
+        }
+        .perspective { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .gradient-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%);
+        }
+        .gradient-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        }
+        .gradient-btn:hover {
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+
+    <!-- Header / Navbar Rực Rỡ -->
+    <header class="gradient-header text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md shadow-inner">
+                    <i class="fa-solid fa-brain text-2xl text-yellow-300 animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight">SmartStudy <span class="text-yellow-300">AI</span></h1>
+                    <p class="text-[10px] text-indigo-100 font-medium">Ghi chú Cornell & Spaced Repetition</p>
+                </div>
+            </div>
+            
+            <div id="auth-status" class="flex items-center space-x-3">
+                <button onclick="openAuthModal('login')" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-sm font-semibold transition border border-white/20 backdrop-blur-sm">Đăng nhập</button>
+                <button onclick="openAuthModal('register')" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl text-sm font-bold shadow-md transition transform hover:-translate-y-0.5">Đăng ký</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        <!-- Sidebar Navigation & Pomodoro -->
+        <aside class="lg:col-span-1 space-y-6">
+            <!-- Navigation -->
+            <nav class="glass-card p-3 rounded-2xl shadow-sm space-y-2">
+                <button onclick="switchTab('cornell')" id="tab-cornell" class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center space-x-3 transition gradient-btn text-white shadow-md">
+                    <i class="fa-solid fa-book-open text-lg"></i>
+                    <span>Ghi chú Cornell</span>
+                </button>
+                <button onclick="switchTab('flashcard')" id="tab-flashcard" class="w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center space-x-3 text-slate-600 hover:bg-indigo-50/60 transition">
+                    <i class="fa-solid fa-layer-group text-lg text-indigo-500"></i>
+                    <span>Flashcards (SM-2)</span>
+                </button>
+            </nav>
+
+            <!-- Pomodoro Timer Widget Nổi Bật -->
+            <div class="glass-card p-6 rounded-2xl shadow-sm text-center border-t-4 border-indigo-500 relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl"></div>
+                <h3 class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-clock"></i> Đồng hồ Pomodoro
+                </h3>
+                <div class="text-5xl font-black text-slate-800 my-4 font-mono tracking-wider drop-shadow-sm" id="pomo-timer">25:00</div>
+                <div class="flex justify-center space-x-2">
+                    <button id="pomo-start-btn" onclick="togglePomodoro()" class="gradient-btn text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-md transition transform active:scale-95 flex items-center">
+                        <i class="fa-solid fa-play mr-2"></i> Bắt đầu
+                    </button>
+                    <button onclick="resetPomodoro()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold px-3 py-2.5 rounded-xl transition">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <section class="lg:col-span-3">
+            
+            <!-- SECTION 1: CORNELL NOTE TAKING -->
+            <div id="section-cornell" class="space-y-6">
+                <!-- Note Editor Form -->
+                <div class="glass-card p-6 rounded-2xl shadow-sm space-y-5 border-t-4 border-indigo-600">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-pen-nib text-indigo-600"></i> Tạo Ghi Chú Cornell Mới
+                        </h2>
+                        <button onclick="generateAISummary()" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-md transition transform hover:-translate-y-0.5 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles text-yellow-300"></i>
+                            <span>AI Tóm tắt</span>
+                        </button>
+                    </div>
+
+                    <input type="text" id="note-title" placeholder="Tiêu đề bài học / Chủ đề..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-800 text-base shadow-sm bg-white/50">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Cue Column -->
+                        <div class="md:col-span-1">
+                            <label class="block text-xs font-extrabold text-indigo-600 uppercase mb-1.5 tracking-wider">Từ khóa / Câu hỏi (Cues)</label>
+                            <textarea id="note-cues" rows="7" placeholder="• Từ khóa chính&#10;• Câu hỏi ôn tập&#10;• Ý tưởng cốt lõi" class="w-full p-3.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-indigo-50/30 font-medium"></textarea>
+                        </div>
+                        <!-- Notes Column -->
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-extrabold text-slate-500 uppercase mb-1.5 tracking-wider">Chi tiết bài học (Notes)</label>
+                            <textarea id="note-body" rows="7" placeholder="Ghi chép chi tiết nội dung bài giảng, công thức, định nghĩa tại đây..." class="w-full p-3.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/70"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Summary Column -->
+                    <div>
+                        <label class="block text-xs font-extrabold text-amber-600 uppercase mb-1.5 tracking-wider">Tóm tắt (Summary)</label>
+                        <textarea id="note-summary" rows="3" placeholder="Tóm tắt ngắn gọn 2-3 câu nội dung bài học..." class="w-full p-3.5 text-sm rounded-xl border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50/40 font-medium"></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <button onclick="saveCornellNote()" class="gradient-btn text-white px-6 py-2.5 rounded-xl font-bold shadow-md transition transform active:scale-95 text-sm flex items-center">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i> Lưu ghi chú
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Notes List -->
+                <div class="space-y-4">
+                    <h3 class="text-md font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-box-archive text-indigo-500"></i> Danh sách ghi chú của bạn
+                    </h3>
+                    <div id="notes-container" class="space-y-4">
+                        <p class="text-sm text-slate-400 italic">Đang tải ghi chú...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: FLASHCARDS (SM-2) -->
+            <div id="section-flashcard" class="hidden space-y-6">
+                <div class="glass-card p-6 rounded-2xl shadow-sm border-t-4 border-emerald-500 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-clone text-emerald-600"></i> Thẻ Ghi Nhớ (Flashcards)
+                        </h2>
+                        <button onclick="openCreateCardModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition transform hover:-translate-y-0.5">
+                            <i class="fa-solid fa-plus mr-1"></i> Thêm thẻ mới
+                        </button>
+                    </div>
+
+                    <!-- Flashcard Deck View -->
+                    <div id="flashcard-deck" class="flex flex-col items-center justify-center py-6">
+                        <div id="card-element" onclick="flipCard()" class="w-full max-w-md h-72 perspective cursor-pointer">
+                            <div id="card-inner" class="relative w-full h-full duration-500 transform-style-3d shadow-xl rounded-2xl bg-white border border-slate-100 flex items-center justify-center p-6 text-center">
+                                <!-- Mặt trước -->
+                                <div class="absolute inset-0 backface-hidden flex flex-col justify-between p-6 bg-gradient-to-br from-white to-indigo-50/40 rounded-2xl">
+                                    <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center justify-center gap-1">
+                                        <i class="fa-solid fa-question-circle"></i> Câu hỏi / Mặt trước
+                                    </span>
+                                    <p id="card-front-text" class="text-xl font-bold text-slate-800 leading-relaxed">Bấm "Thêm thẻ mới" để bắt đầu ôn tập!</p>
+                                    <span class="text-xs font-medium text-slate-400"><i class="fa-solid fa-hand-pointer mr-1"></i> Chạm để lật xem đáp án</span>
+                                </div>
+                                <!-- Mặt sau -->
+                                <div class="absolute inset-0 backface-hidden rotate-y-180 flex flex-col justify-between p-6 bg-gradient-to-br from-emerald-50 to-teal-50/50 rounded-2xl">
+                                    <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center justify-center gap-1">
+                                        <i class="fa-solid fa-check-circle"></i> Đáp án / Mặt sau
+                                    </span>
+                                    <p id="card-back-text" class="text-xl font-bold text-slate-800 leading-relaxed">...</p>
+                                    <span class="text-xs font-medium text-slate-400">Chọn mức độ ghi nhớ bên dưới</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SM-2 Rating Buttons -->
+                        <div id="sm2-buttons" class="mt-6 flex space-x-3 hidden">
+                            <button onclick="rateCard(1)" class="bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition transform active:scale-95">Khó (Lặp lại)</button>
+                            <button onclick="rateCard(3)" class="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition transform active:scale-95">Tốt (Vừa sức)</button>
+                            <button onclick="rateCard(5)" class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition transform active:scale-95">Dễ (Nhớ rõ)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl p-7 w-full max-w-md shadow-2xl space-y-5 border border-slate-100">
+            <div class="flex justify-between items-center">
+                <h3 id="modal-title" class="text-2xl font-black text-slate-800">Đăng nhập</h3>
+                <button onclick="closeAuthModal()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                    <input type="email" id="auth-email" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mật khẩu</label>
+                    <input type="password" id="auth-password" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+                </div>
+                <button type="submit" id="modal-submit-btn" class="w-full gradient-btn text-white py-3 rounded-xl font-bold shadow-lg transition text-sm">Xác nhận</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Flashcard Modal -->
+    <div id="card-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl p-7 w-full max-w-md shadow-2xl space-y-5 border border-slate-100">
+            <div class="flex justify-between items-center">
+                <h3 class="text-2xl font-black text-slate-800">Tạo Flashcard Mới</h3>
+                <button onclick="closeCardModal()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-indigo-600 uppercase mb-1">Mặt trước (Câu hỏi)</label>
+                    <textarea id="card-front-input" rows="3" class="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-emerald-600 uppercase mb-1">Mặt sau (Đáp án)</label>
+                    <textarea id="card-back-input" rows="3" class="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"></textarea>
+                </div>
+                <button onclick="saveFlashcard()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold shadow-lg transition text-sm">Lưu thẻ mới</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Logic Engine -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4VejY0xDcY3LCG6EK52FM1MvRJzQ4q4k",
+            authDomain: "study-note-app-28a4a.firebaseapp.com",
+            projectId: "study-note-app-28a4a",
+            storageBucket: "study-note-app-28a4a.firebasestorage.app",
+            messagingSenderId: "505503765402",
+            appId: "1:505503765402:web:c5b38e45d163755b92a023",
+            measurementId: "G-5SCD97SJRJ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let authMode = 'login';
+        let userCards = [];
+        let currentCardIndex = 0;
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            const authStatusDiv = document.getElementById('auth-status');
+            if (user) {
+                authStatusDiv.innerHTML = `
+                    <span class="text-xs font-bold bg-white/20 px-3 py-1.5 rounded-xl text-white backdrop-blur-md flex items-center gap-1.5"><i class="fa-solid fa-user-check text-yellow-300"></i> ${user.email}</span>
+                    <button onclick="handleSignOut()" class="bg-rose-500 hover:bg-rose-600 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-sm">Đăng xuất</button>
+                `;
+                loadCornellNotes();
+                loadFlashcards();
+            } else {
+                authStatusDiv.innerHTML = `
+                    <button onclick="openAuthModal('login')" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-sm font-semibold transition border border-white/20 backdrop-blur-sm">Đăng nhập</button>
+                    <button onclick="openAuthModal('register')" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl text-sm font-bold shadow-md transition transform hover:-translate-y-0.5">Đăng ký</button>
+                `;
+                document.getElementById('notes-container').innerHTML = '<p class="text-sm text-slate-400 italic">Vui lòng đăng nhập để xem và lưu ghi chú của bạn.</p>';
+            }
+        });
+
+        window.openAuthModal = (mode) => {
+            authMode = mode;
+            document.getElementById('modal-title').innerText = mode === 'login' ? 'Đăng nhập' : 'Đăng ký tài khoản';
+            document.getElementById('modal-submit-btn').innerText = mode === 'login' ? 'Đăng nhập' : 'Đăng ký';
+            document.getElementById('auth-modal').classList.remove('hidden');
+        };
+
+        window.closeAuthModal = () => document.getElementById('auth-modal').classList.add('hidden');
+
+        window.handleAuthSubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+
+            try {
+                if (authMode === 'login') {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                }
+                closeAuthModal();
+            } catch (error) {
+                alert("Thao tác thất bại: " + error.message);
+            }
+        };
+
+        window.handleSignOut = () => signOut(auth);
+
+        window.saveCornellNote = async () => {
+            if (!currentUser) return alert("Bạn cần đăng nhập để lưu ghi chú!");
+
+            const title = document.getElementById('note-title').value;
+            const cues = document.getElementById('note-cues').value;
+            const body = document.getElementById('note-body').value;
+            const summary = document.getElementById('note-summary').value;
+
+            if (!title) return alert("Vui lòng nhập tiêu đề!");
+
+            try {
+                await addDoc(collection(db, "notes"), {
+                    userId: currentUser.uid,
+                    title, cues, body, summary,
+                    createdAt: new Date()
+                });
+                alert("Đã lưu ghi chú thành công!");
+                document.getElementById('note-title').value = '';
+                document.getElementById('note-cues').value = '';
+                document.getElementById('note-body').value = '';
+                document.getElementById('note-summary').value = '';
+                loadCornellNotes();
+            } catch (e) {
+                alert("Lỗi lưu ghi chú: " + e.message);
+            }
+        };
+
+        async function loadCornellNotes() {
+            if (!currentUser) return;
+            const q = query(collection(db, "notes"), where("userId", "==", currentUser.uid));
+            const querySnapshot = await getDocs(q);
+            const container = document.getElementById('notes-container');
+            container.innerHTML = '';
+
+            if (querySnapshot.empty) {
+                container.innerHTML = '<p class="text-sm text-slate-400 italic">Chưa có ghi chú nào. Hãy tạo ghi chú đầu tiên ở trên!</p>';
+                return;
+            }
+
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const card = document.createElement('div');
+                card.className = "glass-card p-5 rounded-2xl shadow-sm space-y-3 relative border-l-4 border-indigo-500 hover:shadow-md transition";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <h4 class="font-extrabold text-indigo-700 text-lg">${data.title}</h4>
+                        <button onclick="deleteNote('${docSnap.id}')" class="text-slate-300 hover:text-rose-500 text-sm transition p-1"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 text-sm">
+                        <div class="col-span-1 bg-indigo-50/50 p-3 rounded-xl text-indigo-900 font-medium whitespace-pre-line border border-indigo-100">${data.cues || 'Chưa có Cues'}</div>
+                        <div class="col-span-2 text-slate-800 p-3 bg-white/60 rounded-xl whitespace-pre-line border border-slate-100">${data.body || ''}</div>
+                    </div>
+                    <div class="bg-amber-50/80 p-3 rounded-xl text-sm text-amber-900 border border-amber-200/60 font-medium"><strong><i class="fa-solid fa-star text-amber-500 mr-1"></i>Tóm tắt:</strong> ${data.summary || 'Chưa có tóm tắt'}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        window.deleteNote = async (id) => {
+            if (confirm("Bạn có chắc chắn muốn xóa ghi chú này?")) {
+                await deleteDoc(doc(db, "notes", id));
+                loadCornellNotes();
+            }
+        };
+
+        window.openCreateCardModal = () => document.getElementById('card-modal').classList.remove('hidden');
+        window.closeCardModal = () => document.getElementById('card-modal').classList.add('hidden');
+
+        window.saveFlashcard = async () => {
+            if (!currentUser) return alert("Bạn cần đăng nhập!");
+            const front = document.getElementById('card-front-input').value;
+            const back = document.getElementById('card-back-input').value;
+            if(!front || !back) return alert("Vui lòng nhập cả câu hỏi và đáp án!");
+
+            await addDoc(collection(db, "flashcards"), {
+                userId: currentUser.uid,
+                front, back,
+                createdAt: new Date()
+            });
+            closeCardModal();
+            document.getElementById('card-front-input').value = '';
+            document.getElementById('card-back-input').value = '';
+            loadFlashcards();
+        };
+
+        async function loadFlashcards() {
+            if (!currentUser) return;
+            const q = query(collection(db, "flashcards"), where("userId", "==", currentUser.uid));
+            const querySnapshot = await getDocs(q);
+            userCards = [];
+            querySnapshot.forEach(docSnap => userCards.push({ id: docSnap.id, ...docSnap.data() }));
+            
+            if (userCards.length > 0) {
+                currentCardIndex = 0;
+                showCard(currentCardIndex);
+            }
+        }
+
+        function showCard(index) {
+            if (userCards.length === 0) return;
+            document.getElementById('card-front-text').innerText = userCards[index].front;
+            document.getElementById('card-back-text').innerText = userCards[index].back;
+        }
+
+        window.rateCard = (rating) => {
+            if(userCards.length === 0) return;
+            currentCardIndex = (currentCardIndex + 1) % userCards.length;
+            window.flipCard(false);
+            showCard(currentCardIndex);
+        };
+    </script>
+
+    <!-- UI Interaction Scripts -->
+    <script>
+        function switchTab(tab) {
+            document.getElementById('section-cornell').classList.add('hidden');
+            document.getElementById('section-flashcard').classList.add('hidden');
+            
+            document.getElementById('tab-cornell').className = "w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center space-x-3 text-slate-600 hover:bg-indigo-50/60 transition";
+            document.getElementById('tab-flashcard').className = "w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center space-x-3 text-slate-600 hover:bg-indigo-50/60 transition";
+
+            if (tab === 'cornell') {
+                document.getElementById('section-cornell').classList.remove('hidden');
+                document.getElementById('tab-cornell').className = "w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center space-x-3 transition gradient-btn text-white shadow-md";
+            } else {
+                document.getElementById('section-flashcard').classList.remove('hidden');
+                document.getElementById('tab-flashcard').className = "w-full text-left px-4 py-3 rounded-xl font-bold text-sm flex items-center space-x-3 transition bg-emerald-600 text-white shadow-md";
+            }
+        }
+
+        let pomoMinutes = 25;
+        let pomoSeconds = 0;
+        let pomoInterval = null;
+        let isRunning = false;
+
+        function togglePomodoro() {
+            const btn = document.getElementById('pomo-start-btn');
+            if (isRunning) {
+                clearInterval(pomoInterval);
+                btn.innerHTML = '<i class="fa-solid fa-play mr-2"></i> Tiếp tục';
+            } else {
+                pomoInterval = setInterval(updateTimer, 1000);
+                btn.innerHTML = '<i class="fa-solid fa-pause mr-2"></i> Tạm dừng';
+            }
+            isRunning = !isRunning;
+        }
+
+        function updateTimer() {
+            const timerDisplay = document.getElementById('pomo-timer');
+            if (pomoSeconds === 0) {
+                if (pomoMinutes === 0) {
+                    clearInterval(pomoInterval);
+                    alert("🎉 Đã hết giờ Pomodoro! Hãy nghỉ ngơi 5 phút nhé.");
+                    resetPomodoro();
+                    return;
+                }
+                pomoMinutes--;
+                pomoSeconds = 59;
+            } else {
+                pomoSeconds--;
+            }
+            timerDisplay.innerText = `${String(pomoMinutes).padStart(2, '0')}:${String(pomoSeconds).padStart(2, '0')}`;
+        }
+
+        function resetPomodoro() {
+            clearInterval(pomoInterval);
+            isRunning = false;
+            pomoMinutes = 25;
+            pomoSeconds = 0;
+            document.getElementById('pomo-timer').innerText = "25:00";
+            document.getElementById('pomo-start-btn').innerHTML = '<i class="fa-solid fa-play mr-2"></i> Bắt đầu';
+        }
+
+        let isFlipped = false;
+        function flipCard(forceState) {
+            const cardInner = document.getElementById('card-inner');
+            const sm2Btns = document.getElementById('sm2-buttons');
+            
+            if (typeof forceState !== 'undefined') {
+                isFlipped = forceState;
+            } else {
+                isFlipped = !isFlipped;
+            }
+
+            if (isFlipped) {
+                cardInner.classList.add('rotate-y-180');
+                sm2Btns.classList.remove('hidden');
+            } else {
+                cardInner.classList.remove('rotate-y-180');
+                sm2Btns.classList.add('hidden');
+            }
+        }
+
+        function generateAISummary() {
+            const bodyText = document.getElementById('note-body').value;
+            if(!bodyText) return alert("Vui lòng nhập nội dung bài học để AI tóm tắt!");
+            document.getElementById('note-summary').value = "✨ AI Tóm tắt: " + bodyText.slice(0, 120) + "...";
+        }
+    </script>
+</body>
+</html>
